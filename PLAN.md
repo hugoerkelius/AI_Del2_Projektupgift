@@ -1,7 +1,51 @@
 # Projektplan – Utrikeshandel → arbetsmarknad (Del 2)
 
-Detaljerad dataplan: [docs/data_plan.md](docs/data_plan.md). Tabeller, koder och
-kolumnschema: [data/README.md](data/README.md). Detta är arbetschecklistan.
+**Kurs:** AI - teori och tillämpning (MAI24HA/MAI25HA)
+**Metod:** Regression (klassisk ML, inga tidsseriemodeller – tidsberoendet hanteras via lag-features)
+
+Tabeller, koder och kolumnschema: [data/README.md](data/README.md).
+
+**Detta är den enda checklistan för hela arbetet.** Koden i `src/`, `scripts/`, `app/` och
+`notebooks/` innehåller inga kommentarer eller TODO:s – allt som ska göras står här.
+
+## Syfte och hypotes
+Kan förändringar i Sveriges export/import av varor och tjänster förklara/prediktera
+arbetsmarknadsutvecklingen (arbetslöshet, sysselsättningsgrad) några månader senare?
+Testas som ett rent regressionsproblem: kontinuerligt utfall, med historisk handelsdata
+(inklusive fördröjda lag-värden) som förklarande variabler.
+
+## Data
+Alla källor hämtas via **SCB:s öppna API, PxWebApi v2** (json-stat2, CC0). v2 är inte
+bakåtkompatibelt med v1, som stängs vid årsskiftet 2026/2027 – gamla v1-exempel går inte att återanvända.
+- API-rot: `https://api.scb.se/OV0104/v2beta/api/v2/`
+- Hitta tabeller och testa frågor: `https://www.statistikdatabasen.scb.se/pxweb/sv/ssd/`
+- Endpoints: `tables?query=...` (sök), `tables/{id}/metadata` (variabler/koder), `tables/{id}/data`
+  (data via GET med `valueCodes[variabel]=...`)
+- Rate limits: max 150 000 celler per uttag, max 30 anrop per 10 s (per IP)
+
+| Datamängd | SCB-tabell | Frekvens | Innehåll |
+|---|---|---|---|
+| Utrikeshandel med varor | TAB1644 | Månad | Export/import per SITC-varugrupp (mnkr) |
+| Utrikeshandel med tjänster | TAB5147 | Kvartal | Export/import per tjänsteslag (mnkr) |
+| Arbetsmarknad (AKU) | TAB6387 | Månad | Arbetslöshet %, sysselsättningsgrad %, per kön |
+
+Tidsomfång: fr.o.m. 2005 (`config.START_YEAR`), så att det finns tillräckligt många
+observationer kvar efter `dropna()` på lag-featurerna. SCB byter ibland tabell-ID vid
+metodändringar (t.ex. AKU:s brott 2021) – verifiera mot metadata om ett anrop slutar fungera.
+
+## Status (2026-09-23)
+
+**Klart:** förberedelserna. `config.py` (tabell-ID:n och koder verifierade mot API:ts metadata
+2026-09-18), `requirements.txt`, `.gitignore`, `data/README.md` och de tre
+råa API-svaren i `data/` (hämtade manuellt 2026-09-18). Virtuell miljö skapad och paketen
+installerade. Alla moduler i `src/`, `scripts/`, `app/` och `notebooks/` finns som **skelett**:
+bara signaturer, kropparna `raise NotImplementedError`.
+
+**Kvar:** all implementation, från och med `src/scb_api.py`. `database/app.db` och `models/` är
+tomma, inget är kört, och koden är stagad men inte committad ännu.
+
+**Nästa steg:** `src/scb_api.py` nerifrån (steg 1), testad mot de sparade json-filerna med
+`--offline` innan något live-anrop görs.
 
 ## Mål
 Ett komplett flöde: **SCB API → SQLite → lag-features → regression (scikit-learn) → Streamlit**.
@@ -20,24 +64,24 @@ Bonus: publicera på Streamlit Community Cloud.
 ## Struktur att bygga
 
 ```
-config.py               Alla inställningar på ett ställe: sökvägar, SCB-tabeller/koder (se data/README.md),
-                        tabellnamn, målvariabel, lag-perioder, split-datum
-requirements.txt        pandas, numpy, scikit-learn, requests, joblib, streamlit, matplotlib/plotly
-.gitignore              .venv/, __pycache__/  (commita database/app.db + models/ – behövs på Streamlit Cloud)
-data/                   Råa API-svar (finns) – rörs aldrig
-database/app.db         SQLite, skapas av load_data
-models/                 model.pkl + metrics.json, skapas av train_model
-src/scb_api.py          API-klient: GET med paus (rate limit), metadata, FROM()-urval för Tid,
+config.py               (finns) Alla inställningar: sökvägar, SCB-tabeller/koder, tabellnamn,
+                        målvariabel, lag-perioder, split-datum – förslagen under "Modellering" får ändras
+requirements.txt        (finns)
+.gitignore              (finns) database/app.db + models/ commitas medvetet – behövs på Streamlit Cloud
+data/                   (finns) Råa API-svar, hämtade 2026-09-18 – rörs aldrig
+database/app.db         (tom) SQLite, skapas av load_data
+models/                 (tom) model.pkl + metrics.json, skapas av train_model
+src/scb_api.py          (skelett) API-klient: GET med paus (rate limit), metadata, FROM()-urval för Tid,
                         json-stat2 -> DataFrame, städning till DB-schemat
-src/db.py               Allt som rör SQLite: anslutning, skriv/läs tabell, finns tabell, spara prediktion
-src/preprocess.py       Sammanslagning (merged_monthly) + lag-features (model_features) + sklearn-preprocessor
-src/train.py            Kronologisk split, modeller, baseline, MAE/RMSE/R², spara modell + metrics
-src/predict.py          Ladda modell + prediktera (används av appen)
-scripts/load_data.py    Steg 1: API -> data/*.json -> DB   (gärna --offline som läser sparade json)
-scripts/build_features.py  Steg 3–4
-scripts/train_model.py  Steg 5–6
-app/streamlit_app.py    Sidor: Data / Historik / Modell / Vad-om / Om projektet
-notebooks/01_eda.py     EDA mot databasen
+src/db.py               (skelett) Allt som rör SQLite: anslutning, skriv/läs tabell, finns tabell, spara prediktion
+src/preprocess.py       (skelett) Sammanslagning (merged_monthly) + lag-features (model_features) + sklearn-preprocessor
+src/train.py            (skelett) Kronologisk split, modeller, baseline, MAE/RMSE/R², spara modell + metrics
+src/predict.py          (skelett) Ladda modell + prediktera (används av appen)
+scripts/load_data.py    (skelett) Steg 1: API -> data/*.json -> DB   (gärna --offline som läser sparade json)
+scripts/build_features.py  (skelett) Steg 3–4
+scripts/train_model.py  (skelett) Steg 5–6
+app/streamlit_app.py    (skelett) Sidor: Data / Historik / Modell / Vad-om / Om projektet
+notebooks/01_eda.py     (skelett) EDA mot databasen
 ```
 
 Principer:
@@ -50,15 +94,24 @@ Principer:
 ## Arbetsordning
 
 ### 1. Datainsamling (backend)
-- [ ] `python -m venv .venv`, `requirements.txt`, `pip install -r requirements.txt`, `.gitignore`
-- [ ] `config.py` med tabell-ID:n och koder från data/README.md
-- [ ] Öppna `https://api.scb.se/OV0104/v2beta/api/v2/tables/TAB6387/metadata?lang=sv` i webbläsaren
+- [x] `python -m venv .venv` + `pip install -r requirements.txt`
+- [x] Läs igenom `config.py` – där finns tabell-ID:n, koder och hur du verifierar dem
+- [x] Öppna `https://api.scb.se/OV0104/v2beta/api/v2/tables/TAB6387/metadata?lang=sv` i webbläsaren
       och hitta koderna själv under `dimension -> <variabel> -> category -> index/label`
-- [ ] `scb_api.py` nerifrån: periodnormalisering (`2010M03` → `2010-03`, `2010K1` → `2010-Q1`)
-      → json-stat2-parser (testa mot `data/*.json`: `value` är en platt lista där sista dimensionen
-      i `id` varierar snabbast; `itertools.product` över koderna ger samma ordning)
-      → pivotera till en rad per (period, grupp) med måtten som kolumner
-      → HTTP-anrop live (metadata, data) med paus mellan anrop
+      (klart 2026-09-18: koderna ligger i `config.SCB_DATASETS` och är dokumenterade i `data/README.md`)
+- [x] Råsvaren hämtade manuellt till `data/*.json` – bygg och testa parsern mot dem innan live-anrop
+- [ ] `scb_api.py` – en funktion i taget, nerifrån. De tre första kräver inget nätverk: utveckla och
+      testa dem mot de sparade `data/*.json`, och skriv HTTP-anropen först när de fungerar.
+  - [ ] `normalize_period` – SCB:s tidskod till DB-format: `2010M03` → `2010-03`, `2010K1` → `2010-Q1`
+  - [ ] `parse_jsonstat2` – platt `value`-lista → lång DataFrame (en kolumn per dimension + `value`).
+        Svaret är en tabell utrullad till en lista: `id` ger dimensionsordningen, `size` antalet koder
+        per dimension, och **sista dimensionen varierar snabbast**. `itertools.product` över koderna
+        i `id`-ordning ger därför exakt samma ordning som `value`.
+        Kontroll: `len(value)` == produkten av `size` (t.ex. tjänster: 2 × 13 × 1 × 86 = 2236).
+  - [ ] `tidy_dataframe` – lång DataFrame → DB-schemat: en rad per (period, grupp) med måtten
+        (`measure_dim` via `measure_map`) som kolumner, klartext i `grupp_namn`, värden skalade med `scale`
+  - [ ] `_get` / `get_metadata` / `get_data` – live mot API:t, med paus mellan anrop (30 anrop/10 s)
+        och omförsök vid 429
 - [ ] `db.py` (sqlite3 + pandas `to_sql`/`read_sql`, index på `period`)
 - [ ] `scripts/load_data.py` → `database/app.db` med tre tabeller. Kontroll: 0 saknade värden,
       rader = perioder × grupper (× typ_data för AKU)
@@ -86,16 +139,93 @@ Principer:
       test-prediktionerna till DB (för appen)
 - [ ] Prova målvariabel `arbetsloshet_sa` / `sysselsattning`, fler lags (t-12), horisont t+3
 - [ ] Hyperparametrar med `TimeSeriesSplit`
+- [ ] Dokumentera resonemanget: varför respektive modell, vilken presterade bäst och varför
+- [ ] Var missar modellen (vilken period/bransch är svårast)? Konkreta förbättringsförslag
+      (fler features, branschspecifik modell, fler lag-perioder)
 
-### 5. Frontend
-- [ ] Data (tabeller från DB), Modell (metrics + pred vs faktiskt)
-- [ ] Historik (grafer, nedbrytning per varugrupp), Vad-om (formulär → prediktion → spara i DB), Om projektet
-- [ ] `@st.cache_data` för DB-läsning, `@st.cache_resource` för modellen
+### 5. Frontend (`app/streamlit_app.py`)
+Förutsättning: steg 1–4 klara. Appen läser **bara** DB + sparad modell – ingen träning, inga
+API-anrop, inget som läser `data/*.json`. Kolumnnamn från `config.py`, inte hårdkodade.
+Kör lokalt: `streamlit run app/streamlit_app.py`
 
-### 6. Avslut
-- [ ] Deploy: share.streamlit.io (DB + modell commitade)
-- [ ] Teknisk rapport (~3 sidor) + README med resultattabell
-- [ ] Stäm av med Antonio: docs/data_plan.md avsnitt 5
+#### 5.0 Grund
+- [ ] Importera `db` och `predict` från `src` (sys.path-raden finns redan)
+- [ ] `st.set_page_config` – titel, `layout="wide"`, ev. ikon
+- [ ] Sidomeny med `st.sidebar.radio` (finns) – sidordning Data / Historik / Modell / Vad-om / Om projektet
+- [ ] Felhantering: om `config.DB_PATH` eller `config.MODEL_PATH` saknas → `st.error` med vilket skript som ska köras, `st.stop()`
+
+#### 5.1 Cachade laddare (överst i filen)
+- [ ] `@st.cache_data` `load_table(name)` → `db.read_table(name)`
+- [ ] `@st.cache_data` `load_metrics()` → `predict.load_metrics()`
+- [ ] `@st.cache_resource` `load_model()` → `predict.load_model()` (modellen är inte serialiserbar → resource, inte data)
+- [ ] Knapp i sidomenyn "Rensa cache" (`st.cache_data.clear()`) – praktiskt när DB byggts om
+
+#### 5.2 Sidan Data
+- [ ] Dropdown över tabeller från `db.list_tables()`
+- [ ] Visa vald tabell med `st.dataframe` (`use_container_width=True`)
+- [ ] Nyckeltal ovanför: antal rader, antal perioder, första/sista period, antal grupper
+- [ ] Filter: grupp (`grupp_namn`) och periodintervall (slider eller två selectbox)
+- [ ] Kort text per tabell: SCB-tabell-ID, frekvens, enhet (mnkr / %) – från `data/README.md`
+- [ ] Knapp "Ladda ner CSV" (`st.download_button`)
+
+#### 5.3 Sidan Historik
+- [ ] Läs `merged_monthly`
+- [ ] Tidsintervall-filter (delas med Data-sidan via en hjälpfunktion)
+- [ ] Graf 1 (plotly): export_varor & import_varor över tid, ev. handelsnetto_varor som egen kurva/stapel
+- [ ] Graf 2: arbetsloshet vs arbetsloshet_sa (visa att säsongrensning tar bort svängningarna)
+- [ ] Graf 3: export & arbetslöshet i samma figur med två y-axlar (motiverar sambandet – 2008/2009, 2020)
+- [ ] Nedbrytning per varugrupp: läs `handel_varor`, filtrera bort totalraden
+      (`config.SCB_DATASETS["handel_varor"]["total_code"]`), multiselect på `grupp_namn`, linje- eller staplad areagraf
+- [ ] Nedbrytning per tjänsteslag på samma sätt från `handel_tjanster` (kvartal)
+- [ ] Alla figurer: axeltitlar med enhet, "Källa: SCB" som caption
+
+#### 5.4 Sidan Modell
+- [ ] Läs `metrics.json` → tabell: rad per modell (inkl. baseline), kolumner MAE / RMSE / R² test + R² träning
+- [ ] Markera bästa modellen (den i `model.pkl`) och ange målvariabel + split-datum (`config.TARGET_SERIES`, `config.TRAIN_END`)
+- [ ] Kort text: slår modellen baseline? tecken på överanpassning (R² träning >> test)?
+- [ ] Läs `predictions_test` → graf faktiskt vs prediktion över testperioden (välj modell i selectbox)
+- [ ] Residualgraf (faktiskt − prediktion) eller scatter faktiskt/prediktion
+- [ ] Feature importance / koefficienter från den laddade pipelinen:
+      feature-namn efter preprocessorn (`get_feature_names_out`); linjära → `coef_`, RandomForest → `feature_importances_`; sorterat stapeldiagram
+- [ ] Lista features som modellen använder (numeric_cols + categorical_cols från model-bundeln)
+
+#### 5.5 Sidan Vad-om
+- [ ] Ladda modell-bundeln (`load_model`) och senaste raden i `model_features` som standardvärden
+- [ ] `st.form` med ett `st.number_input` per numerisk feature (label = kolumnnamn, standard = senaste värdet,
+      rimligt steg) och `st.selectbox` för `config.SEASON_FEATURE` (01–12)
+- [ ] Ev. gruppera fälten i kolumner: handel varor / handel tjänster / arbetslöshet t-1 / säsong
+- [ ] Vid submit: `predict.predict_one(bundle, features)` → visa med `st.metric` (delta mot senaste faktiska värdet)
+- [ ] Knapp "Spara prediktion" → `db.save_prediction(features, prediction, model_name)`
+- [ ] Visa tidigare sparade prediktioner från `config.PREDICTIONS_TABLE` (om tabellen finns – `db.table_exists`)
+- [ ] Rensa cache för `load_table` efter sparning så listan uppdateras
+- [ ] Varningstext: modellen extrapolerar dåligt utanför träningsintervallet (visa min/max per feature)
+- [ ] (Valfritt) "Scenario"-knappar: t.ex. export −20 % → fyll formuläret automatiskt
+
+#### 5.6 Sidan Om projektet
+- [ ] Syfte och frågeställning (påverkar utrikeshandeln arbetslösheten med fördröjning?)
+- [ ] Datakällor: tabell-ID:n, urval, frekvens, licens CC0, "Källa: SCB"
+- [ ] Metod: SQLite → lag-features → kronologisk split → sklearn Pipeline; varför baseline
+- [ ] Begränsningar: kvartalsdata kopplad till senast avslutade kvartal, korrelation ≠ kausalitet, kort testperiod
+- [ ] Länk till repo
+- [ ] Teknikstack (tabellen nedan)
+
+### 6. Kvalitet, deploy och avslut
+- [ ] Kör igenom alla sidor utan fel med tom `predictions`-tabell
+- [ ] Inga absoluta sökvägar (använd `config.*_PATH`)
+- [ ] `requirements.txt` innehåller allt appen behöver (streamlit, plotly, joblib, scikit-learn, pandas)
+- [ ] Bekräfta att `database/app.db` och `models/` är commitade (se `.gitignore`)
+- [ ] Deploy på share.streamlit.io, startfil `app/streamlit_app.py`; ange Python-version om 3.14 krånglar
+- [ ] Testa den publicerade appen, klistra in länken i README
+- [ ] Teknisk rapport (~3 sidor): bakgrund, huvudresultat, teknisk specifikation, utvärdering av arbetet
+- [ ] README med resultattabell (baseline + alla modeller)
+- [ ] Säkerställ att all kod är körd inför inlämning
+- [ ] Visa Antonio ett minimalt end-to-end-flöde (PoC): SCB-data → databas → enkel modell → resultat
+      i Streamlit. Fokus på att flödet fungerar, inte att modellen är optimerad.
+- [ ] Stäm av med Antonio:
+  - [ ] Godkännande av dataset (SCB handel + arbetsmarknad) → uppdatera "Godkänt av Antonio" i `data/README.md`
+  - [ ] "Regression" avser regressionsalgoritmer generellt (linjär, Ridge/Lasso, trädbaserad), inte bara enkel linjär
+  - [ ] Lag-feature-ansatsen är ett giltigt sätt att hantera tiden utan att räknas som tidsseriemodell
+  - [ ] Nivå på branschnedbrytning (aggregerat vs. per bransch)
 
 ## Teknikval
 | Del | Val | Varför |
