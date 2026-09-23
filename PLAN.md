@@ -35,17 +35,16 @@ metodändringar (t.ex. AKU:s brott 2021) – verifiera mot metadata om ett anrop
 
 ## Status (2026-09-23)
 
-**Klart:** förberedelserna. `config.py` (tabell-ID:n och koder verifierade mot API:ts metadata
+**Klart:** förberedelserna och steg 1 (datainsamling). `config.py` (tabell-ID:n och koder verifierade mot API:ts metadata
 2026-09-18), `requirements.txt`, `.gitignore`, `data/README.md` och de tre
 råa API-svaren i `data/` (hämtade manuellt 2026-09-18). Virtuell miljö skapad och paketen
-installerade. Alla moduler i `src/`, `scripts/`, `app/` och `notebooks/` finns som **skelett**:
-bara signaturer, kropparna `raise NotImplementedError`.
+installerade. `src/scb_api.py`, `src/db.py` och `scripts/load_data.py` är klara och testade (offline och
+live, 2026-09-23). `database/app.db` innehåller de tre rådatatabellerna. Övriga moduler är
+fortfarande **skelett**: bara signaturer, kropparna `raise NotImplementedError`.
 
-**Kvar:** all implementation, från och med `src/scb_api.py`. `database/app.db` och `models/` är
-tomma, inget är kört, och koden är stagad men inte committad ännu.
+**Kvar:** steg 2 och framåt. `models/` är tom, och koden är stagad men inte committad ännu.
 
-**Nästa steg:** `src/scb_api.py` nerifrån (steg 1), testad mot de sparade json-filerna med
-`--offline` innan något live-anrop görs.
+**Nästa steg:** commit, sedan EDA (steg 2) i `notebooks/01_eda.py`.
 
 ## Mål
 Ett komplett flöde: **SCB API → SQLite → lag-features → regression (scikit-learn) → Streamlit**.
@@ -69,15 +68,15 @@ config.py               (finns) Alla inställningar: sökvägar, SCB-tabeller/ko
 requirements.txt        (finns)
 .gitignore              (finns) database/app.db + models/ commitas medvetet – behövs på Streamlit Cloud
 data/                   (finns) Råa API-svar, hämtade 2026-09-18 – rörs aldrig
-database/app.db         (tom) SQLite, skapas av load_data
+database/app.db         (finns) SQLite, skapas av load_data
 models/                 (tom) model.pkl + metrics.json, skapas av train_model
-src/scb_api.py          (skelett) API-klient: GET med paus (rate limit), metadata, FROM()-urval för Tid,
+src/scb_api.py          (klar) API-klient: GET med paus (rate limit), metadata, FROM()-urval för Tid,
                         json-stat2 -> DataFrame, städning till DB-schemat
-src/db.py               (skelett) Allt som rör SQLite: anslutning, skriv/läs tabell, finns tabell, spara prediktion
+src/db.py               (klar) Allt som rör SQLite: anslutning, skriv/läs tabell, finns tabell, spara prediktion
 src/preprocess.py       (skelett) Sammanslagning (merged_monthly) + lag-features (model_features) + sklearn-preprocessor
 src/train.py            (skelett) Kronologisk split, modeller, baseline, MAE/RMSE/R², spara modell + metrics
 src/predict.py          (skelett) Ladda modell + prediktera (används av appen)
-scripts/load_data.py    (skelett) Steg 1: API -> data/*.json -> DB   (gärna --offline som läser sparade json)
+scripts/load_data.py    (klar) Steg 1: API -> data/*.json -> DB   (gärna --offline som läser sparade json)
 scripts/build_features.py  (skelett) Steg 3–4
 scripts/train_model.py  (skelett) Steg 5–6
 app/streamlit_app.py    (skelett) Sidor: Data / Historik / Modell / Vad-om / Om projektet
@@ -100,21 +99,23 @@ Principer:
       och hitta koderna själv under `dimension -> <variabel> -> category -> index/label`
       (klart 2026-09-18: koderna ligger i `config.SCB_DATASETS` och är dokumenterade i `data/README.md`)
 - [x] Råsvaren hämtade manuellt till `data/*.json` – bygg och testa parsern mot dem innan live-anrop
-- [ ] `scb_api.py` – en funktion i taget, nerifrån. De tre första kräver inget nätverk: utveckla och
+- [x] `scb_api.py` – en funktion i taget, nerifrån. De tre första kräver inget nätverk: utveckla och
       testa dem mot de sparade `data/*.json`, och skriv HTTP-anropen först när de fungerar.
-  - [ ] `normalize_period` – SCB:s tidskod till DB-format: `2010M03` → `2010-03`, `2010K1` → `2010-Q1`
-  - [ ] `parse_jsonstat2` – platt `value`-lista → lång DataFrame (en kolumn per dimension + `value`).
+  - [x] `normalize_period` – SCB:s tidskod till DB-format: `2010M03` → `2010-03`, `2010K1` → `2010-Q1`
+  - [x] `parse_jsonstat2` – platt `value`-lista → lång DataFrame (en kolumn per dimension + `value`).
         Svaret är en tabell utrullad till en lista: `id` ger dimensionsordningen, `size` antalet koder
         per dimension, och **sista dimensionen varierar snabbast**. `itertools.product` över koderna
         i `id`-ordning ger därför exakt samma ordning som `value`.
         Kontroll: `len(value)` == produkten av `size` (t.ex. tjänster: 2 × 13 × 1 × 86 = 2236).
-  - [ ] `tidy_dataframe` – lång DataFrame → DB-schemat: en rad per (period, grupp) med måtten
+  - [x] `tidy_dataframe` – lång DataFrame → DB-schemat: en rad per (period, grupp) med måtten
         (`measure_dim` via `measure_map`) som kolumner, klartext i `grupp_namn`, värden skalade med `scale`
-  - [ ] `_get` / `get_metadata` / `get_data` – live mot API:t, med paus mellan anrop (30 anrop/10 s)
+  - [x] `_get` / `get_metadata` / `get_data` – live mot API:t, med paus mellan anrop (30 anrop/10 s)
         och omförsök vid 429
-- [ ] `db.py` (sqlite3 + pandas `to_sql`/`read_sql`, index på `period`)
-- [ ] `scripts/load_data.py` → `database/app.db` med tre tabeller. Kontroll: 0 saknade värden,
+- [x] `db.py` (sqlite3 + pandas `to_sql`/`read_sql`, index på `period`)
+- [x] `scripts/load_data.py` → `database/app.db` med tre tabeller. Kontroll: 0 saknade värden,
       rader = perioder × grupper (× typ_data för AKU)
+      (resultat: varor 2838 rader, tjänster 1086, AKU 1560. Tjänsteslag D1 saknar data 2005–2012,
+      de 32 raderna tas bort – totalraden D0 är komplett)
 - [ ] Commit
 
 ### 2. EDA
