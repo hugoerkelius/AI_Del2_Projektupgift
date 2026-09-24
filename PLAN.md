@@ -123,13 +123,13 @@ Allt görs i `notebooks/01_eda.py`. Kör filen med `python notebooks/01_eda.py`,
 cell (`# %%`) i VS Code. Läs **bara** från databasen med `db.read_table` – inte från json-filerna.
 
 #### 2.1 Förberedelser
-- [ ] Lägg till `from src import db` och `import pandas as pd`, `import matplotlib.pyplot as plt`
+- [x] Lägg till `from src import db` och `import pandas as pd`, `import matplotlib.pyplot as plt`
       under `import config`
-- [ ] Skapa en mapp för figurerna (t.ex. `figurer/`) – de behövs till rapporten
-- [ ] Kör filen en gång och kontrollera att importerna fungerar innan du går vidare
+- [x] Skapa en mapp för figurerna (t.ex. `figurer/`) – de behövs till rapporten
+- [x] Kör filen en gång och kontrollera att importerna fungerar innan du går vidare
 
 #### 2.2 Läs data (cellen "Läs data")
-- [ ] Läs `handel_varor` med bara totalraden (`grupp='0-9'`)
+- [x] Läs `handel_varor` med bara totalraden (`grupp='0-9'`)
 - [ ] Läs `handel_tjanster` med bara totalraden (`grupp='D0'`)
 - [ ] Läs `arbetsmarknad` med totalraden för båda könen (`grupp='1+2'`) – behåll både `O_DATA` och `SR_DATA`
 - [ ] Skriv ut `.head()`, `.shape` och första/sista `period` för varje tabell – stämmer det med
