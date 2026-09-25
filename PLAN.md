@@ -80,7 +80,7 @@ scripts/load_data.py    (klar) Steg 1: API -> data/*.json -> DB   (gärna --offl
 scripts/build_features.py  (skelett) Steg 3–4
 scripts/train_model.py  (skelett) Steg 5–6
 app/streamlit_app.py    (skelett) Sidor: Data / Historik / Modell / Vad-om / Om projektet
-notebooks/01_eda.py     (skelett) EDA mot databasen
+notebooks/01_eda.py     (klar) EDA mot databasen
 ```
 
 Principer:
@@ -116,7 +116,7 @@ Principer:
       rader = perioder × grupper (× typ_data för AKU)
       (resultat: varor 2838 rader, tjänster 1086, AKU 1560. Tjänsteslag D1 saknar data 2005–2012,
       de 32 raderna tas bort – totalraden D0 är komplett)
-- [ ] Commit
+- [x] Commit
 
 ### 2. EDA
 Allt görs i `notebooks/01_eda.py`. Kör filen med `python notebooks/01_eda.py`, eller cell för
@@ -130,19 +130,19 @@ cell (`# %%`) i VS Code. Läs **bara** från databasen med `db.read_table` – i
 
 #### 2.2 Läs data (cellen "Läs data")
 - [x] Läs `handel_varor` med bara totalraden (`grupp='0-9'`)
-- [ ] Läs `handel_tjanster` med bara totalraden (`grupp='D0'`)
-- [ ] Läs `arbetsmarknad` med totalraden för båda könen (`grupp='1+2'`) – behåll både `O_DATA` och `SR_DATA`
-- [ ] Skriv ut `.head()`, `.shape` och första/sista `period` för varje tabell – stämmer det med
+- [x] Läs `handel_tjanster` med bara totalraden (`grupp='D0'`)
+- [x] Läs `arbetsmarknad` med totalraden för båda könen (`grupp='1+2'`) – behåll både `O_DATA` och `SR_DATA`
+- [x] Skriv ut `.head()`, `.shape` och första/sista `period` för varje tabell – stämmer det med
       utskriften från `load_data.py`?
-- [ ] Kolumnen `period` är text (`"2010-03"`). Gör en ny kolumn med riktiga datum så att
+- [x] Kolumnen `period` är text (`"2010-03"`). Gör en ny kolumn med riktiga datum så att
       graferna blir rätt: `pd.to_datetime(...)` fungerar för månader. Kvartal (`"2010-Q1"`)
       kräver `pd.PeriodIndex(..., freq="Q").to_timestamp()`
 
 #### 2.3 Tidsserier (cellen "Tidsserier")
-- [ ] Graf 1: export och import av varor över tid (två linjer i samma figur)
-- [ ] Graf 2: export och import av tjänster över tid (kvartal)
-- [ ] Graf 3: arbetslöshet `O_DATA` och `SR_DATA` i samma figur – vad gör säsongrensningen?
-- [ ] Alla grafer: titel, axeltitlar med enhet (mnkr / %), förklaring (`plt.legend()`),
+- [x] Graf 1: export och import av varor över tid (två linjer i samma figur)
+- [x] Graf 2: export och import av tjänster över tid (kvartal)
+- [x] Graf 3: arbetslöshet `O_DATA` och `SR_DATA` i samma figur – vad gör säsongrensningen?
+- [x] Alla grafer: titel, axeltitlar med enhet (mnkr / %), förklaring (`plt.legend()`),
       "Källa: SCB". Spara med `plt.savefig(...)` innan `plt.show()`
 - [ ] Svara skriftligt (i PLAN.md eller rapportutkastet):
   - [ ] Syns finanskrisen 2008/2009 och pandemin 2020 i handeln? I arbetslösheten?
@@ -151,11 +151,11 @@ cell (`# %%`) i VS Code. Läs **bara** från databasen med `db.read_table` – i
         medelvärdet – vilka månader är arbetslösheten högst/lägst?
 
 #### 2.4 Korrelation vid olika fördröjningar (cellen "Korrelation")
-- [ ] Slå ihop export (varor, totalt) och arbetslöshet (`O_DATA`) till en tabell med `pd.merge` på `period`
-- [ ] För k = 0, 1, 3, 6, 12: flytta exporten k månader bakåt med `.shift(k)` och räkna
+- [x] Slå ihop export (varor, totalt) och arbetslöshet (`O_DATA`) till en tabell med `pd.merge` på `period`
+- [x] För k = 0, 1, 3, 6, 12: flytta exporten k månader bakåt med `.shift(k)` och räkna
       korrelationen med arbetslösheten (`.corr()`). Spara resultaten i en lista eller dict
-- [ ] Skriv ut resultatet som en tabell och gör ett stapeldiagram (k på x-axeln, korrelation på y-axeln)
-- [ ] Gör om samma sak med exporten som **procentuell förändring mot samma månad året innan**
+- [x] Skriv ut resultatet som en tabell och gör ett stapeldiagram (k på x-axeln, korrelation på y-axeln)
+- [x] Gör om samma sak med exporten som **procentuell förändring mot samma månad året innan**
       (`.pct_change(12)`). Båda serierna har trender över tid, och två trender kan ge hög
       korrelation utan att ha med varandra att göra – jämför resultaten
 - [ ] Svara skriftligt:
@@ -164,17 +164,17 @@ cell (`# %%`) i VS Code. Läs **bara** från databasen med `db.read_table` – i
 - [ ] (Valfritt) Samma analys med import i stället för export
 
 #### 2.5 Nedbrytning per varugrupp (cellen "Nedbrytning per varugrupp")
-- [ ] Läs `handel_varor` **utan** totalraden (`grupp != '0-9'`)
-- [ ] Rita export över tid per varugrupp (en linje per `grupp_namn`). Tips: `pivot` med
+- [x] Läs `handel_varor` **utan** totalraden (`grupp != '0-9'`)
+- [x] Rita export över tid per varugrupp (en linje per `grupp_namn`). Tips: `pivot` med
       `period` som index och `grupp_namn` som kolumner, sedan `.plot()`
 - [ ] Vilka 2–3 varugrupper är störst? Vilken föll mest 2009 och 2020?
 
 #### 2.6 Avslut
-- [ ] Hela filen går att köra uppifrån och ned utan fel
+- [x] Hela filen går att köra uppifrån och ned utan fel
 - [ ] Skriv 3–5 meningar med de viktigaste slutsatserna – de används i rapporten och på appens
       Om projektet-sida
 - [ ] Uppdatera `config.LAGS` om korrelationen pekar på andra fördröjningar
-- [ ] Commit
+- [x] Commit
 
 ### 3. Sammanslagning och features
 - [ ] `merged_monthly`: totalraden ur varje tabell; AKU delas i O_DATA/SR_DATA-kolumner;
