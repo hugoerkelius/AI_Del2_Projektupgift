@@ -73,11 +73,11 @@ models/                 (tom) model.pkl + metrics.json, skapas av train_model
 src/scb_api.py          (klar) API-klient: GET med paus (rate limit), metadata, FROM()-urval för Tid,
                         json-stat2 -> DataFrame, städning till DB-schemat
 src/db.py               (klar) Allt som rör SQLite: anslutning, skriv/läs tabell, finns tabell, spara prediktion
-src/preprocess.py       (skelett) Sammanslagning (merged_monthly) + lag-features (model_features) + sklearn-preprocessor
+src/preprocess.py       (klar) Sammanslagning (merged_monthly) + lag-features (model_features) + sklearn-preprocessor
 src/train.py            (skelett) Kronologisk split, modeller, baseline, MAE/RMSE/R², spara modell + metrics
 src/predict.py          (skelett) Ladda modell + prediktera (används av appen)
 scripts/load_data.py    (klar) Steg 1: API -> data/*.json -> DB   (gärna --offline som läser sparade json)
-scripts/build_features.py  (skelett) Steg 3–4
+scripts/build_features.py  (klar) Steg 3–4
 scripts/train_model.py  (skelett) Steg 5–6
 app/streamlit_app.py    (skelett) Sidor: Data / Historik / Modell / Vad-om / Om projektet
 notebooks/01_eda.py     (klar) EDA mot databasen
@@ -177,13 +177,13 @@ cell (`# %%`) i VS Code. Läs **bara** från databasen med `db.read_table` – i
 - [x] Commit
 
 ### 3. Sammanslagning och features
-- [ ] `merged_monthly`: totalraden ur varje tabell; AKU delas i O_DATA/SR_DATA-kolumner;
+- [x] `merged_monthly`: totalraden ur varje tabell; AKU delas i O_DATA/SR_DATA-kolumner;
       tjänster (kvartal) kopplas till varje månad som **senast avslutade kvartal**
       (`pd.Period(m, "M").asfreq("Q") - 1`) – annars look-ahead
-- [ ] `model_features`: lag t-1/t-3/t-6 (ev. 12-mån förändring) för export/import,
+- [x] `model_features`: lag t-1/t-3/t-6 (ev. 12-mån förändring) för export/import,
       arbetslöshet t-1 (autoregressiv), månad som kategori, target = arbetslöshet vid t, `dropna()`
-- [ ] Kontroll: `arbetsloshet_t1` på rad i == target på rad i-1
-- [ ] Kronologisk split (träning t.o.m. 2022-12, test därefter) – inte `train_test_split`
+- [x] Kontroll: `arbetsloshet_t1` på rad i == target på rad i-1
+- [x] Kronologisk split (träning t.o.m. 2022-12, test därefter) – inte `train_test_split`
 
 ### 4. Modellering
 - [ ] Naiv baseline: "samma som förra månaden" – modellen måste slå den

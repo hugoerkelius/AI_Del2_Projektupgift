@@ -66,7 +66,8 @@ TEST_PREDICTIONS_TABLE = "predictions_test"
 TASK_TYPE = "regression"
 
 TARGET_SERIES = "arbetsloshet"
-TARGET_COLUMN = "target_arbetsloshet"
+TARGET_COLUMN = "target"
+HORIZON = 0
 
 LAG_SOURCE_COLUMNS = ["export_varor", "import_varor", "export_tjanster", "import_tjanster"]
 LAGS = [1, 3, 6]
