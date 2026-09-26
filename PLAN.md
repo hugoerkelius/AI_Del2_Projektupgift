@@ -34,18 +34,6 @@ Tidsomfång: fr.o.m. 2005 (`config.START_YEAR`), så att det finns tillräckligt
 observationer kvar efter `dropna()` på lag-featurerna. SCB byter ibland tabell-ID vid
 metodändringar (t.ex. AKU:s brott 2021) – verifiera mot metadata om ett anrop slutar fungera.
 
-## Status (2026-09-23)
-
-**Klart:** förberedelserna och steg 1 (datainsamling). `config.py` (tabell-ID:n och koder verifierade mot API:ts metadata
-2026-09-18), `requirements.txt`, `.gitignore`, `data/README.md` och de tre
-råa API-svaren i `data/` (hämtade manuellt 2026-09-18). Virtuell miljö skapad och paketen
-installerade. `src/scb_api.py`, `src/db.py` och `scripts/load_data.py` är klara och testade (offline och
-live, 2026-09-23). `database/app.db` innehåller de tre rådatatabellerna. Övriga moduler är
-fortfarande **skelett**: bara signaturer, kropparna `raise NotImplementedError`.
-
-**Kvar:** steg 2 och framåt. `models/` är tom, och koden är stagad men inte committad ännu.
-
-
 ## Mål
 Ett komplett flöde: **SCB API → SQLite → lag-features → regression (scikit-learn) → Streamlit**.
 Bonus: publicera på Streamlit Community Cloud.
@@ -69,16 +57,16 @@ requirements.txt        (finns)
 .gitignore              (finns) database/app.db + models/ commitas medvetet – behövs på Streamlit Cloud
 data/                   (finns) Råa API-svar, hämtade 2026-09-18 – rörs aldrig
 database/app.db         (finns) SQLite, skapas av load_data
-models/                 (tom) model.pkl + metrics.json, skapas av train_model
+models/                 (finns) model.pkl + metrics.json, skapas av train_model
 src/scb_api.py          (klar) API-klient: GET med paus (rate limit), metadata, FROM()-urval för Tid,
                         json-stat2 -> DataFrame, städning till DB-schemat
 src/db.py               (klar) Allt som rör SQLite: anslutning, skriv/läs tabell, finns tabell, spara prediktion
 src/preprocess.py       (klar) Sammanslagning (merged_monthly) + lag-features (model_features) + sklearn-preprocessor
-src/train.py            (skelett) Kronologisk split, modeller, baseline, MAE/RMSE/R², spara modell + metrics
+src/train.py            (klar) Kronologisk split, modeller, baseline, MAE/RMSE/R², spara modell + metrics
 src/predict.py          (skelett) Ladda modell + prediktera (används av appen)
 scripts/load_data.py    (klar) Steg 1: API -> data/*.json -> DB   (gärna --offline som läser sparade json)
 scripts/build_features.py  (klar) Steg 3–4
-scripts/train_model.py  (skelett) Steg 5–6
+scripts/train_model.py  (klar) Steg 5–6
 app/streamlit_app.py    (skelett) Sidor: Data / Historik / Modell / Vad-om / Om projektet
 notebooks/01_eda.py     (klar) EDA mot databasen
 ```
@@ -109,7 +97,7 @@ Principer:
         Kontroll: `len(value)` == produkten av `size` (t.ex. tjänster: 2 × 13 × 1 × 86 = 2236).
   - [x] `tidy_dataframe` – lång DataFrame → DB-schemat: en rad per (period, grupp) med måtten
         (`measure_dim` via `measure_map`) som kolumner, klartext i `grupp_namn`, värden skalade med `scale`
-  - [x] `_get` / `get_metadata` / `get_data` – live mot API:t, med paus mellan anrop (30 anrop/10 s)
+  - [x] `_get` / `get_data` – live mot API:t, med paus mellan anrop (30 anrop/10 s)
         och omförsök vid 429
 - [x] `db.py` (sqlite3 + pandas `to_sql`/`read_sql`, index på `period`)
 - [x] `scripts/load_data.py` → `database/app.db` med tre tabeller. Kontroll: 0 saknade värden,
@@ -186,13 +174,13 @@ cell (`# %%`) i VS Code. Läs **bara** från databasen med `db.read_table` – i
 - [x] Kronologisk split (träning t.o.m. 2022-12, test därefter) – inte `train_test_split`
 
 ### 4. Modellering
-- [ ] Naiv baseline: "samma som förra månaden" – modellen måste slå den
-- [ ] `Pipeline([ColumnTransformer(StandardScaler + OneHotEncoder), LinearRegression])`
-- [ ] Ridge/Lasso (korrelerade handelsvariabler), RandomForest (icke-linjärt, feature importance)
-- [ ] MAE/RMSE/R² på test + R² på träning (överanpassning?); spara metrics.json och
+- [x] Naiv baseline: "samma som förra månaden" – modellen måste slå den
+- [x] `Pipeline([ColumnTransformer(StandardScaler + OneHotEncoder), LinearRegression])`
+- [x] Ridge/Lasso (korrelerade handelsvariabler), RandomForest (icke-linjärt, feature importance)
+- [x] MAE/RMSE/R² på test + R² på träning (överanpassning?); spara metrics.json och
       test-prediktionerna till DB (för appen)
-- [ ] Prova målvariabel `arbetsloshet_sa` / `sysselsattning`, fler lags (t-12), horisont t+3
-- [ ] Hyperparametrar med `TimeSeriesSplit`
+- [x] Prova målvariabel `arbetsloshet_sa` / `sysselsattning`, fler lags (t-12), horisont t+3
+- [x] Hyperparametrar med `TimeSeriesSplit`
 - [ ] Dokumentera resonemanget: varför respektive modell, vilken presterade bäst och varför
 - [ ] Var missar modellen (vilken period/bransch är svårast)? Konkreta förbättringsförslag
       (fler features, branschspecifik modell, fler lag-perioder)

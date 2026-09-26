@@ -12,7 +12,7 @@ mot innan du anropar API:t live, och gör att databasen kan byggas om utan nätv
 | Licens | CC0 (enligt API:ts `/config`), ange "Källa: SCB" |
 | Hämtat | 2026-09-18, fr.o.m. 2005 (`config.START_YEAR`) |
 | Uppgiftstyp | Regression |
-| Målkolumn | `target_arbetsloshet` = arbetslöshetstal 15–74 år (%, icke säsongrensat) vid månad t |
+| Målkolumn | `target` = arbetslöshetstal 15–74 år (%, icke säsongrensat) vid månad t |
 | Godkänt av Antonio | TODO |
 
 ## Tabeller från SCB
@@ -58,19 +58,18 @@ Skalning: varor är i tkr → dela med 1000 för mnkr så varor och tjänster f�
 | `export_varde`, `import_varde` | real | mnkr |
 | `arbetsloshet_procent`, `sysselsattning_procent` | real | procent av befolkningen 15–74 år |
 
-### `merged_monthly` (en rad per månad) – målschema
-`period, export_varor, import_varor, handelsnetto_varor, export_tjanster, import_tjanster,
-tjanster_kvartal, arbetsloshet, sysselsattning, arbetsloshet_sa, sysselsattning_sa`
+### `merged_monthly` (en rad per månad)
+`period, export_varor, import_varor, arbetsloshet, sysselsattning, arbetsloshet_sa,
+kvartal, export_tjanster, import_tjanster`
 
 Tjänstehandel (kvartal) kopplas till varje månad som **senast avslutade kvartal**
-(`tjanster_kvartal`), dvs. den information som fanns vid tidpunkten.
+(`kvartal`), dvs. den information som fanns vid tidpunkten.
 
-### `model_features` (datasetet modellen tränar på) – målschema
+### `model_features` (datasetet modellen tränar på)
 - `<serie>_t1`, `_t3`, `_t6` – värdet 1/3/6 månader tidigare, för export/import av varor och tjänster
-- `<serie>_yoy_t1` – 12-månaders procentuell förändring, mätt vid t-1
 - `arbetsloshet_t1` – arbetslösheten månaden innan (autoregressiv)
 - `manad` – månad `01`–`12` (kategorisk säsongsvariabel)
-- `target_arbetsloshet` – målvariabel
+- `target` – målvariabel
 
 ### Övriga tabeller
 - `predictions_test` – faktiskt utfall och varje modells prediktion för testperioden

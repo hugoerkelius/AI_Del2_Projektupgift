@@ -1,0 +1,26 @@
+experiment,modell,mae,rmse,r2
+Grund,LinearRegression,0.541,0.685,0.343
+Grund,Ridge,0.54,0.684,0.344
+Grund,Lasso,0.482,0.623,0.456
+Grund,RandomForest,0.611,0.765,0.181
+Grund,Baseline,0.681,0.916,-0.176
+Lag 12,LinearRegression,0.567,0.722,0.269
+Lag 12,Ridge,0.563,0.715,0.283
+Lag 12,Lasso,0.479,0.609,0.48
+Lag 12,RandomForest,0.596,0.755,0.202
+Lag 12,Baseline,0.681,0.916,-0.176
+Säsongrensad,LinearRegression,0.454,0.573,0.115
+Säsongrensad,Ridge,0.44,0.553,0.175
+Säsongrensad,Lasso,0.426,0.53,0.244
+Säsongrensad,RandomForest,0.538,0.632,-0.078
+Säsongrensad,Baseline,0.433,0.542,0.207
+Sysselsättning,LinearRegression,0.424,0.507,0.826
+Sysselsättning,Ridge,0.423,0.509,0.824
+Sysselsättning,Lasso,0.512,0.59,0.763
+Sysselsättning,RandomForest,0.57,0.76,0.608
+Sysselsättning,Baseline,0.817,1.094,0.188
+Horisont t+3,LinearRegression,0.568,0.687,0.358
+Horisont t+3,Ridge,0.566,0.684,0.363
+Horisont t+3,Lasso,0.524,0.63,0.459
+Horisont t+3,RandomForest,0.767,0.986,-0.323
+Horisont t+3,Baseline,0.818,1.015,-0.402

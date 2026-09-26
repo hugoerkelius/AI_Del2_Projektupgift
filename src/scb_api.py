@@ -118,11 +118,6 @@ def _get(url, params=None):
     raise RuntimeError("SCB svarade med 429 för många gånger: " + url)
 
 
-def get_metadata(table_id):
-    url = config.SCB_BASE_URL + "tables/" + table_id + "/metadata"
-    return _get(url)
-
-
 def get_data(dataset_key):
     settings = config.SCB_DATASETS[dataset_key]
     table_id = settings["table_id"]

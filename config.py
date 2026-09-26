@@ -63,15 +63,13 @@ FEATURES_TABLE = "model_features"
 PREDICTIONS_TABLE = "predictions"
 TEST_PREDICTIONS_TABLE = "predictions_test"
 
-TASK_TYPE = "regression"
-
 TARGET_SERIES = "arbetsloshet"
 TARGET_COLUMN = "target"
 HORIZON = 0
+CV_SPLITS = 5
 
 LAG_SOURCE_COLUMNS = ["export_varor", "import_varor", "export_tjanster", "import_tjanster"]
 LAGS = [1, 3, 6]
-AUTOREGRESSIVE_LAGS = [1]
 SEASON_FEATURE = "manad"
 
 TRAIN_END = "2022-12"

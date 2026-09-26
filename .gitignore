@@ -4,3 +4,4 @@ __pycache__/
 .ipynb_checkpoints/
 .pytest_cache/
 # OBS: database/app.db och models/ commitas medvetet så att Streamlit Cloud hittar dem
+
