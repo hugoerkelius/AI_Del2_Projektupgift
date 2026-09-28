@@ -13,7 +13,6 @@ mot innan du anropar API:t live, och gör att databasen kan byggas om utan nätv
 | Hämtat | 2026-09-18, fr.o.m. 2005 (`config.START_YEAR`) |
 | Uppgiftstyp | Regression |
 | Målkolumn | `target` = arbetslöshetstal 15–74 år (%, icke säsongrensat) vid månad t |
-| Godkänt av Antonio | TODO |
 
 ## Tabeller från SCB
 

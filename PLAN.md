@@ -6,7 +6,7 @@
 
 Tabeller, koder och kolumnschema: [data/README.md](data/README.md).
 
-**Detta är den enda checklistan för hela arbetet.** Koden i `src/`, `scripts/`, `app/` och
+**Detta är den enda checklistan för hela arbetet.** Koden i `src/`, `scripts/`, `streamlit_app.py` och
 `notebooks/` innehåller inga kommentarer eller TODO:s – allt som ska göras står här.
 
 ## Syfte och hypotes
@@ -42,7 +42,7 @@ Bonus: publicera på Streamlit Community Cloud.
 
 ```
  SCB PxWebApi v2        SQLite (database/app.db)                 Modell                 Streamlit
- TAB1644 varor    -->   handel_varor       --+                                          app/streamlit_app.py
+ TAB1644 varor    -->   handel_varor       --+                                          streamlit_app.py
  TAB5147 tjänster -->   handel_tjanster      +--> merged_monthly --> model_features --> models/model.pkl
  TAB6387 AKU      -->   arbetsmarknad      --+                                          metrics.json
  (scripts/load_data.py)             (scripts/build_features.py)   (scripts/train_model.py)   predictions_test
@@ -63,11 +63,11 @@ src/scb_api.py          (klar) API-klient: GET med paus (rate limit), metadata, 
 src/db.py               (klar) Allt som rör SQLite: anslutning, skriv/läs tabell, finns tabell, spara prediktion
 src/preprocess.py       (klar) Sammanslagning (merged_monthly) + lag-features (model_features) + sklearn-preprocessor
 src/train.py            (klar) Kronologisk split, modeller, baseline, MAE/RMSE/R², spara modell + metrics
-src/predict.py          (skelett) Ladda modell + prediktera (används av appen)
+src/predict.py          (klar) Ladda modell + metrics, prediktera (används av appen)
 scripts/load_data.py    (klar) Steg 1: API -> data/*.json -> DB   (gärna --offline som läser sparade json)
 scripts/build_features.py  (klar) Steg 3–4
 scripts/train_model.py  (klar) Steg 5–6
-app/streamlit_app.py    (skelett) Sidor: Data / Historik / Modell / Vad-om / Om projektet
+streamlit_app.py        (klar) Sidor: Data / Historik / Modell / Vad-om / Om projektet
 notebooks/01_eda.py     (klar) EDA mot databasen
 ```
 
@@ -185,89 +185,50 @@ cell (`# %%`) i VS Code. Läs **bara** från databasen med `db.read_table` – i
 - [ ] Var missar modellen (vilken period/bransch är svårast)? Konkreta förbättringsförslag
       (fler features, branschspecifik modell, fler lag-perioder)
 
-### 5. Frontend (`app/streamlit_app.py`)
+### 5. Frontend (`streamlit_app.py`)
 Förutsättning: steg 1–4 klara. Appen läser **bara** DB + sparad modell – ingen träning, inga
 API-anrop, inget som läser `data/*.json`. Kolumnnamn från `config.py`, inte hårdkodade.
-Kör lokalt: `streamlit run app/streamlit_app.py`
+Kör lokalt: `streamlit run streamlit_app.py`
+
+Appen hålls medvetet enkel: Streamlits standardutseende, inga filter och inga extra funktioner.
 
 #### 5.0 Grund
-- [ ] Importera `db` och `predict` från `src` (sys.path-raden finns redan)
-- [ ] `st.set_page_config` – titel, `layout="wide"`, ev. ikon
-- [ ] Sidomeny med `st.sidebar.radio` (finns) – sidordning Data / Historik / Modell / Vad-om / Om projektet
-- [ ] Felhantering: om `config.DB_PATH` eller `config.MODEL_PATH` saknas → `st.error` med vilket skript som ska köras, `st.stop()`
+- [x] Importera `db` och `predict` från `src` (appen ligger i projektmappen, så importerna fungerar direkt)
+- [x] `st.set_page_config` med sidtitel
+- [x] Sidomeny med `st.sidebar.radio` – sidordning Data / Historik / Modell / Vad-om / Om projektet
 
-#### 5.1 Cachade laddare (överst i filen)
-- [ ] `@st.cache_data` `load_table(name)` → `db.read_table(name)`
-- [ ] `@st.cache_data` `load_metrics()` → `predict.load_metrics()`
-- [ ] `@st.cache_resource` `load_model()` → `predict.load_model()` (modellen är inte serialiserbar → resource, inte data)
-- [ ] Knapp i sidomenyn "Rensa cache" (`st.cache_data.clear()`) – praktiskt när DB byggts om
+#### 5.1 Sidan Data
+- [x] Dropdown över tabeller från `db.list_tables()`
+- [x] Visa vald tabell med `st.dataframe`
 
-#### 5.2 Sidan Data
-- [ ] Dropdown över tabeller från `db.list_tables()`
-- [ ] Visa vald tabell med `st.dataframe` (`use_container_width=True`)
-- [ ] Nyckeltal ovanför: antal rader, antal perioder, första/sista period, antal grupper
-- [ ] Filter: grupp (`grupp_namn`) och periodintervall (slider eller två selectbox)
-- [ ] Kort text per tabell: SCB-tabell-ID, frekvens, enhet (mnkr / %) – från `data/README.md`
-- [ ] Knapp "Ladda ner CSV" (`st.download_button`)
+#### 5.2 Sidan Historik
+- [x] Läs `merged_monthly`
+- [x] Graf: export_varor & import_varor över tid (`st.line_chart`)
+- [x] Graf: arbetslöshet över tid
 
-#### 5.3 Sidan Historik
-- [ ] Läs `merged_monthly`
-- [ ] Tidsintervall-filter (delas med Data-sidan via en hjälpfunktion)
-- [ ] Graf 1 (plotly): export_varor & import_varor över tid, ev. handelsnetto_varor som egen kurva/stapel
-- [ ] Graf 2: arbetsloshet vs arbetsloshet_sa (visa att säsongrensning tar bort svängningarna)
-- [ ] Graf 3: export & arbetslöshet i samma figur med två y-axlar (motiverar sambandet – 2008/2009, 2020)
-- [ ] Nedbrytning per varugrupp: läs `handel_varor`, filtrera bort totalraden
-      (`config.SCB_DATASETS["handel_varor"]["total_code"]`), multiselect på `grupp_namn`, linje- eller staplad areagraf
-- [ ] Nedbrytning per tjänsteslag på samma sätt från `handel_tjanster` (kvartal)
-- [ ] Alla figurer: axeltitlar med enhet, "Källa: SCB" som caption
+#### 5.3 Sidan Modell
+- [x] Visa bästa modellen (den i `model.pkl`)
+- [x] Läs `metrics.json` → tabell: rad per modell (inkl. baseline), kolumner MAE / RMSE / R²
+- [x] Läs `predictions_test` → graf faktiskt vs prediktion för bästa modellen
 
-#### 5.4 Sidan Modell
-- [ ] Läs `metrics.json` → tabell: rad per modell (inkl. baseline), kolumner MAE / RMSE / R² test + R² träning
-- [ ] Markera bästa modellen (den i `model.pkl`) och ange målvariabel + split-datum (`config.TARGET_SERIES`, `config.TRAIN_END`)
-- [ ] Kort text: slår modellen baseline? tecken på överanpassning (R² träning >> test)?
-- [ ] Läs `predictions_test` → graf faktiskt vs prediktion över testperioden (välj modell i selectbox)
-- [ ] Residualgraf (faktiskt − prediktion) eller scatter faktiskt/prediktion
-- [ ] Feature importance / koefficienter från den laddade pipelinen:
-      feature-namn efter preprocessorn (`get_feature_names_out`); linjära → `coef_`, RandomForest → `feature_importances_`; sorterat stapeldiagram
-- [ ] Lista features som modellen använder (numeric_cols + categorical_cols från model-bundeln)
+#### 5.4 Sidan Vad-om
+- [x] Ladda modell-bundeln (`predict.load_model()`) och senaste raden i `model_features` som standardvärden
+- [x] `st.form` med ett `st.number_input` per numerisk feature och `st.selectbox` för `config.SEASON_FEATURE` (01–12)
+- [x] Vid submit: `predict.predict_one(bundle, features)` → visa predikterad arbetslöshet
 
-#### 5.5 Sidan Vad-om
-- [ ] Ladda modell-bundeln (`load_model`) och senaste raden i `model_features` som standardvärden
-- [ ] `st.form` med ett `st.number_input` per numerisk feature (label = kolumnnamn, standard = senaste värdet,
-      rimligt steg) och `st.selectbox` för `config.SEASON_FEATURE` (01–12)
-- [ ] Ev. gruppera fälten i kolumner: handel varor / handel tjänster / arbetslöshet t-1 / säsong
-- [ ] Vid submit: `predict.predict_one(bundle, features)` → visa med `st.metric` (delta mot senaste faktiska värdet)
-- [ ] Knapp "Spara prediktion" → `db.save_prediction(features, prediction, model_name)`
-- [ ] Visa tidigare sparade prediktioner från `config.PREDICTIONS_TABLE` (om tabellen finns – `db.table_exists`)
-- [ ] Rensa cache för `load_table` efter sparning så listan uppdateras
-- [ ] Varningstext: modellen extrapolerar dåligt utanför träningsintervallet (visa min/max per feature)
-- [ ] (Valfritt) "Scenario"-knappar: t.ex. export −20 % → fyll formuläret automatiskt
-
-#### 5.6 Sidan Om projektet
-- [ ] Syfte och frågeställning (påverkar utrikeshandeln arbetslösheten med fördröjning?)
-- [ ] Datakällor: tabell-ID:n, urval, frekvens, licens CC0, "Källa: SCB"
-- [ ] Metod: SQLite → lag-features → kronologisk split → sklearn Pipeline; varför baseline
-- [ ] Begränsningar: kvartalsdata kopplad till senast avslutade kvartal, korrelation ≠ kausalitet, kort testperiod
-- [ ] Länk till repo
-- [ ] Teknikstack (tabellen nedan)
+#### 5.5 Sidan Om projektet
+- [x] Frågeställning, datakällor (SCB-tabeller), kort metod, "Källa: SCB"
 
 ### 6. Kvalitet, deploy och avslut
-- [ ] Kör igenom alla sidor utan fel med tom `predictions`-tabell
-- [ ] Inga absoluta sökvägar (använd `config.*_PATH`)
-- [ ] `requirements.txt` innehåller allt appen behöver (streamlit, plotly, joblib, scikit-learn, pandas)
-- [ ] Bekräfta att `database/app.db` och `models/` är commitade (se `.gitignore`)
-- [ ] Deploy på share.streamlit.io, startfil `app/streamlit_app.py`; ange Python-version om 3.14 krånglar
+- [x] Kör igenom alla sidor utan fel
+- [x] Inga absoluta sökvägar (använd `config.*_PATH`)
+- [x] `requirements.txt` innehåller allt projektet behöver, med låsta versioner (model.pkl kräver samma scikit-learn)
+- [x] Bekräfta att `database/app.db` och `models/` är commitade (se `.gitignore`)
+- [ ] Deploy på share.streamlit.io, startfil `streamlit_app.py`; ange Python-version om 3.14 krånglar
 - [ ] Testa den publicerade appen, klistra in länken i README
 - [ ] Teknisk rapport (~3 sidor): bakgrund, huvudresultat, teknisk specifikation, utvärdering av arbetet
-- [ ] README med resultattabell (baseline + alla modeller)
+- [x] README med resultattabell (baseline + alla modeller)
 - [ ] Säkerställ att all kod är körd inför inlämning
-- [ ] Visa Antonio ett minimalt end-to-end-flöde (PoC): SCB-data → databas → enkel modell → resultat
-      i Streamlit. Fokus på att flödet fungerar, inte att modellen är optimerad.
-- [ ] Stäm av med Antonio:
-  - [ ] Godkännande av dataset (SCB handel + arbetsmarknad) → uppdatera "Godkänt av Antonio" i `data/README.md`
-  - [ ] "Regression" avser regressionsalgoritmer generellt (linjär, Ridge/Lasso, trädbaserad), inte bara enkel linjär
-  - [ ] Lag-feature-ansatsen är ett giltigt sätt att hantera tiden utan att räknas som tidsseriemodell
-  - [ ] Nivå på branschnedbrytning (aggregerat vs. per bransch)
 
 ## Teknikval
 | Del | Val | Varför |
